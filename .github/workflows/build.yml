@@ -28,10 +28,15 @@ jobs:
           packager: npm
           token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: 🧹 Nuke Cache
+        run: |
+          npm cache clean --force
+          rm -rf node_modules
+          rm -rf package-lock.json
+
       - name: 📦 Install Dependencies
         run: npm install
 
       - name: 🚀 Build APK
-        run: eas build --platform android --profile preview --non-interactive --local
-
-
+        # Added --clear-cache flag to force Babel to reload config
+        run: eas build --platform android --profile preview --non-interactive --local --clear-cache
