@@ -14,8 +14,7 @@ import { BlurView } from 'expo-blur';
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.85;
 const CARD_HEIGHT = 230;
-// Generic Axis Link - In production you would make this dynamic per card
-const BANK_URL = 'https://pgi.billdesk.com/pgidsk/pgmerc/axiscard/axis_card.jsp';
+const AXIS_URL = 'https://pgi.billdesk.com/pgidsk/pgmerc/axiscard/axis_card.jsp';
 
 const THEME = {
   bg: '#000000',
@@ -36,7 +35,6 @@ const getGhostScript = (card, amount, email, phone) => `
     }
     
     setTimeout(async () => {
-       // 4-Box Logic
        const inputs = Array.from(document.querySelectorAll('input'));
        const boxes = inputs.filter(i => i.maxLength === 4 && i.type !== 'hidden');
        if(boxes.length >= 4) {
@@ -52,7 +50,6 @@ const getGhostScript = (card, amount, email, phone) => `
   })();
 `;
 
-// LUXURY CARD COMPONENT
 const LuxuryCard = ({ item, index, scrollX, onPress }) => {
   const rnStyle = useAnimatedStyle(() => {
     const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
@@ -117,7 +114,7 @@ export default function App() {
           <SafeAreaView style={{flex:1, backgroundColor:'black'}}>
               <StatusBar barStyle="light-content" />
               <View style={styles.nav}><TouchableOpacity onPress={()=>setView('HOME')}><X color="white"/></TouchableOpacity><Text style={{color:THEME.gold}}>SECURE PAY</Text><View/></View>
-              <WebView source={{uri: BANK_URL}} injectedJavaScript={getGhostScript(active, amt, active.email, active.phone)} onShouldStartLoadWithRequest={handleReq} javaScriptEnabled domStorageEnabled />
+              <WebView source={{uri: AXIS_URL}} injectedJavaScript={getGhostScript(active, amt, active.email, active.phone)} onShouldStartLoadWithRequest={handleReq} javaScriptEnabled domStorageEnabled />
           </SafeAreaView>
       );
   }
@@ -186,4 +183,4 @@ const styles = StyleSheet.create({
 });
 
 
-                      
+    
