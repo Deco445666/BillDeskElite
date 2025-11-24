@@ -10,6 +10,9 @@ jobs:
   build:
     name: EAS Build
     runs-on: ubuntu-latest
+    env:
+      # THIS IS THE SECRET SAUCE to prevent memory crashes
+      _JAVA_OPTIONS: "-Xmx4096m -XX:+UseParallelGC"
     steps:
       - name: 🏗 Setup Repo
         uses: actions/checkout@v3
@@ -18,7 +21,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18.x
-          # I REMOVED THE CACHE LINE HERE TO FIX YOUR ERROR
 
       - name: 🏗 Setup EAS
         uses: expo/expo-github-action@v8
@@ -28,7 +30,6 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: 📦 Install Dependencies
-        # "npm install" will generate the missing lock file automatically for this session
         run: npm install
 
       - name: 🚀 Build APK
