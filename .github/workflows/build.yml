@@ -1,3 +1,13 @@
+name: Build Android APK
+
+on:
+  # This enables the manual button
+  workflow_dispatch:
+  # This makes it run AUTOMATICALLY when you save this file
+  push:
+    branches:
+      - main
+
 jobs:
   build:
     name: EAS Build
@@ -23,4 +33,5 @@ jobs:
 
       - name: 🚀 Build APK
         run: eas build --platform android --profile preview --non-interactive --local
+
 
