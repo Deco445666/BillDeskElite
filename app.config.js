@@ -5,10 +5,6 @@ module.exports = {
     version: "1.0.0",
     orientation: "portrait",
     userInterfaceStyle: "dark",
-    
-    // I removed the icon links so the build won't fail!
-    // It will use a default Expo icon for this test.
-    
     assetBundlePatterns: [
       "**/*"
     ],
