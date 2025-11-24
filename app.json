@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "BillDesk Elite",
+    "slug": "billdesk-elite",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.elite.billdesk",
+      "adaptiveIcon": {
+        "backgroundColor": "#000000"
+      }
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}
+
+
