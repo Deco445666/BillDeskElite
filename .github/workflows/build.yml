@@ -11,7 +11,6 @@ jobs:
     name: EAS Build
     runs-on: ubuntu-latest
     env:
-      # THIS IS THE SECRET SAUCE to prevent memory crashes
       _JAVA_OPTIONS: "-Xmx4096m -XX:+UseParallelGC"
     steps:
       - name: 🏗 Setup Repo
