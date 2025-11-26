@@ -11,6 +11,7 @@ jobs:
     name: Production Build
     runs-on: ubuntu-latest
     env:
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
       _JAVA_OPTIONS: "-Xmx4096m -XX:+UseParallelGC"
     steps:
       - name: 🏗 Setup Repo
@@ -34,17 +35,22 @@ jobs:
           packager: npm
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 🧹 Force Clean
+      - name: 🧹 Force Clean & Debug
         run: |
           npm cache clean --force
           rm -rf node_modules
+          # Delete potential conflict files
           rm -f babel.config.json
           rm -f app.config.js
+          rm -f app.config.ts
+          # List files to verify cleanup in logs
+          ls -la
 
       - name: 📦 Install Dependencies
         run: npm install
 
       - name: 🚀 Build APK
+        # Added --clear-cache to eas build command as well
         run: eas build --platform android --profile preview --non-interactive --local --clear-cache
 
       - name: 📤 Upload APK
