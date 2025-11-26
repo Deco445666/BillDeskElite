@@ -1,10 +1,11 @@
-- name: 📤 Upload APK
+- name: Step Name
+  uses: action/name
+Both `name` and `uses` are keys of the step object in the `steps` list. So they must be at the same indentation level.
+
+In the block above:
+```yaml
+      - name: 📤 Upload APK
         uses: actions/upload-artifact@v3
-        with:
-          name: app-release
-          path: android/app/build/outputs/apk/release/*.apk
-          # Note: The path above depends on standard Android builds. 
-          # Since we use EAS Local, the output is usually in the root or specified folder.
-          # EAS Local usually outputs the file in the current directory.
-          # A safer path for EAS Local output is:
-          path: "*.apk"
+This is correct. The `-` indicates the start of the list item (the step object). `name` is the first key. `uses` is the second key of the *same* object, so it aligns with `name`.
+
+**Please delete everything in `.github/workflows/build.yml` and paste the code block above exactly.** This will resolve the syntax error.
