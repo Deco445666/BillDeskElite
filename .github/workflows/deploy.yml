@@ -10,37 +10,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Get the code
+      # 1. Get the code from your repo
       - name: 🏗 Setup Repo
         uses: actions/checkout@v3
 
-      # 2. Setup Java 17 (Required for modern Android builds)
+      # 2. Setup Java 17 (Required for Android builds)
       - name: 🏗 Setup Java 17
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # 3. Setup Node.js (For React Native/Expo)
+      # 3. Setup Node.js (FIXED: Removed cache setting to solve lock file error)
       - name: 🏗 Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: 'npm'
+          # cache: 'npm' <--- REMOVED THIS LINE because you don't have package-lock.json
 
       # 4. Install your project libraries
       - name: 📦 Install Dependencies
         run: npm install
 
-      # 5. Install Expo CLI globally (Ensures command exists)
+      # 5. Install Expo CLI globally
       - name: 📦 Install Expo CLI
         run: npm install -g expo-cli
 
-      # 6. CRITICAL STEP: Convert Expo code to Native Android code
+      # 6. Convert Expo code to Native Android code
       - name: ⚙️ Prebuild (Generate Android Folder)
         run: npx expo prebuild --platform android --no-interactive
 
-      # 7. Build the APK using Gradle (Bypasses EAS login/keystore issues)
+      # 7. Build the APK using Gradle
       - name: 🔨 Build APK with Gradle
         working-directory: android
         run: |
