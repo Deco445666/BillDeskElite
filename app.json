@@ -7,8 +7,7 @@
     "userInterfaceStyle": "dark",
     "assetBundlePatterns": [
       "**/*"
-    ],
-    "ios": {
+dcdcdcdcvdv     "ios": {
       "supportsTablet": true
     },
     "android": {
