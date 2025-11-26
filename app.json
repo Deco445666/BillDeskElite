@@ -17,10 +17,8 @@
         "backgroundColor": "#000000"
       }
     },
-    "extra": {
-      "eas": {
-        "projectId": "your-project-id"
-      }
-    }
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }
