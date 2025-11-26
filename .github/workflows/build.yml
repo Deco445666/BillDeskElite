@@ -28,11 +28,15 @@ jobs:
           packager: npm
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 🧹 Nuke Cache
+      - name: 🧹 Nuclear Cache Clean & File Guard
         run: |
           npm cache clean --force
           rm -rf node_modules
+          # FORCE DELETE any conflicting JS configs that might be lingering
           rm -f babel.config.js
+          rm -f app.config.js
+          rm -f app.config.ts
+          echo "Conflicting config files deleted."
 
       - name: 📦 Install Dependencies
         run: npm install
