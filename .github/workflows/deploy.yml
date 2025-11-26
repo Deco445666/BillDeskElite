@@ -1,4 +1,4 @@
-name: Build Android APK (Offline Mode)
+name: Build Final Production APK (Clean)
 
 on:
   push:
@@ -10,32 +10,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Get the code
+      # 1. Setup Environment
       - name: 🏗 Setup Repo
         uses: actions/checkout@v3
 
-      # 2. Setup Java 17
       - name: 🏗 Setup Java 17
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # 3. Setup Node.js
       - name: 🏗 Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      # 4. Install Libraries
+      # 2. Install Dependencies
       - name: 📦 Install Dependencies
         run: npm install
 
-      # 5. Install Expo CLI
       - name: 📦 Install Expo CLI
         run: npm install -g expo-cli
 
-      # 6. Generate Valid Assets (From previous fix)
+      # 3. Generate Valid Assets
       - name: 🖼️ Generate Valid Assets
         run: |
           mkdir -p assets
@@ -44,23 +41,33 @@ jobs:
           cp assets/icon.png assets/splash.png
           cp assets/icon.png assets/favicon.png
 
-      # 7. Prebuild
-      - name: ⚙️ Prebuild (Generate Android Folder)
+      # 4. Prebuild (Generate Android Project)
+      - name: ⚙️ Prebuild
         run: npx expo prebuild --platform android
 
-      # 8. Build APK with BUNDLED CODE (The Fix)
-      # We added '-PbundleInDebug=true' to force the Javascript into the APK.
-      - name: 🔨 Build APK with Gradle
+      # 5. Generate Keystore
+      - name: 🔐 Generate Keystore
+        run: |
+          keytool -genkey -v -keystore release.keystore -alias androidreleasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
+
+      # 6. Build Release APK (WITH CLEANING)
+      # We added './gradlew clean' to wipe any old Debug files.
+      - name: 🔨 Build Release APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug -PbundleInDebug=true
+          ./gradlew clean
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
+            -Pandroid.injected.signing.store.password=android \
+            -Pandroid.injected.signing.key.alias=androidreleasekey \
+            -Pandroid.injected.signing.key.password=android
 
-      # 9. Upload Result
+      # 7. Upload with NEW NAME
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BillDesk-Elite-App
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: BillDesk-FINAL-PRODUCTION
+          path: android/app/build/outputs/apk/release/app-release.apk
 
 
