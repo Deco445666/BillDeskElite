@@ -1,11 +1,47 @@
-- name: Step Name
-  uses: action/name
-Both `name` and `uses` are keys of the step object in the `steps` list. So they must be at the same indentation level.
+name: Build Android APK
 
-In the block above:
-```yaml
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: EAS Build
+    runs-on: ubuntu-latest
+    env:
+      _JAVA_OPTIONS: "-Xmx4096m -XX:+UseParallelGC"
+    steps:
+      - name: 🏗 Setup Repo
+        uses: actions/checkout@v3
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+
+      - name: 🏗 Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          packager: npm
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 🧹 Nuke Cache
+        run: |
+          npm cache clean --force
+          rm -rf node_modules
+          rm -f babel.config.js
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 🚀 Build APK
+        run: eas build --platform android --profile preview --non-interactive --local --clear-cache
+
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v3
-This is correct. The `-` indicates the start of the list item (the step object). `name` is the first key. `uses` is the second key of the *same* object, so it aligns with `name`.
-
-**Please delete everything in `.github/workflows/build.yml` and paste the code block above exactly.** This will resolve the syntax error.
+        with:
+          name: app-release
+          path: "*.apk"
