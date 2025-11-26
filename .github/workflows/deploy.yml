@@ -1,4 +1,4 @@
-name: Build Android APK (Debug Mode)
+name: Build Android APK (Offline Mode)
 
 on:
   push:
@@ -35,34 +35,28 @@ jobs:
       - name: 📦 Install Expo CLI
         run: npm install -g expo-cli
 
-      # -----------------------------------------------------------
-      # FINAL FIX: GENERATE REAL VALID IMAGES (No Downloads)
-      # This creates a valid 1x1 pixel PNG file from text code.
-      # It is impossible for this to fail or be "corrupt".
-      # -----------------------------------------------------------
+      # 6. Generate Valid Assets (From previous fix)
       - name: 🖼️ Generate Valid Assets
         run: |
           mkdir -p assets
-          # This text string below is a real, valid 1x1 pixel PNG image
           echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" | base64 -d > assets/icon.png
           cp assets/icon.png assets/adaptive-icon.png
           cp assets/icon.png assets/splash.png
           cp assets/icon.png assets/favicon.png
-          echo "Assets generated successfully."
-          ls -R assets/
 
-      # 6. Prebuild (Silent Mode)
+      # 7. Prebuild
       - name: ⚙️ Prebuild (Generate Android Folder)
         run: npx expo prebuild --platform android
 
-      # 7. Build APK
+      # 8. Build APK with BUNDLED CODE (The Fix)
+      # We added '-PbundleInDebug=true' to force the Javascript into the APK.
       - name: 🔨 Build APK with Gradle
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug -PbundleInDebug=true
 
-      # 8. Upload Result
+      # 9. Upload Result
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
