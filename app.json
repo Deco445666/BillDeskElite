@@ -1,10 +1,16 @@
 {
   "expo": {
-    "name": "BillDesk Elite",
+    "name": "billdesk-elite",
     "slug": "billdesk-elite",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -12,14 +18,21 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.elite.billdesk",
       "adaptiveIcon": {
-        "backgroundColor": "#000000"
-      }
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.elite.billdesk"
     },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "61679cab-7aaa-4a5b-a545-f96d269f0cba"
       }
     }
   }
