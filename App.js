@@ -6,7 +6,8 @@ import {
 import { WebView } from 'react-native-webview';
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
-import { CreditCard, Plus, X, ShieldCheck, Zap, History } from 'lucide-react-native';
+// CHANGED: Using standard Expo vector icons instead of Lucide
+import { MaterialCommunityIcons } from '@expo/vector-icons'; 
 import Animated, { useSharedValue, useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
@@ -23,6 +24,11 @@ const THEME = {
   text: '#FFFFFF',
   dim: '#666666'
 };
+
+// Helper for icons to keep code clean
+const Icon = ({ name, size = 24, color = "white" }) => (
+  <MaterialCommunityIcons name={name} size={size} color={color} />
+);
 
 const getGhostScript = (card, amount, email, phone) => `
   (function() {
@@ -65,11 +71,11 @@ const LuxuryCard = ({ item, index, scrollX, onPress }) => {
             <View style={{position:'absolute', top:0, left:0, right:0, height:1, backgroundColor: THEME.gold}} />
             <View style={styles.row}>
                 <Text style={styles.bank}>{item.bankName.toUpperCase()}</Text>
-                <ShieldCheck color={THEME.gold} size={24} />
+                <Icon name="shield-check" size={24} color={THEME.gold} />
             </View>
             <View style={{flexDirection:'row', alignItems:'center', marginTop:20}}>
                 <View style={styles.chip} />
-                <Zap color="#444" size={20} style={{marginLeft:10}} />
+                <Icon name="contactless-payment" size={24} color="#444" style={{marginLeft:10}} />
             </View>
             <Text style={styles.number}>{item.number.replace(/(.{4})/g, '$1  ').trim()}</Text>
             <View style={styles.row}>
@@ -88,6 +94,8 @@ export default function App() {
   const [view, setView] = useState('HOME');
   const [active, setActive] = useState(null);
   const [amt, setAmt] = useState('');
+  const [geminiLoading, setGeminiLoading] = useState(false);
+  const [geminiResponse, setGeminiResponse] = useState('');
   const scrollX = useSharedValue(0);
 
   useEffect(() => {
@@ -109,11 +117,45 @@ export default function App() {
       return true;
   };
 
+  const getGeminiInsights = async () => {
+    setGeminiLoading(true);
+    setGeminiResponse('');
+    setView('GEMINI'); 
+
+    const apiKey = ""; // API key provided by environment
+    const prompt = `
+      Act as a high-end financial advisor. Analyze the following credit card portfolio:
+      ${JSON.stringify(cards.map(c => ({ bank: c.bankName, expiry: c.expiry })))}
+      Provide 3 brief insights.
+    `;
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Unable to generate insights.";
+      setGeminiResponse(text);
+    } catch (error) {
+      setGeminiResponse("Connection error.");
+    } finally {
+      setGeminiLoading(false);
+    }
+  };
+
   if(view === 'PAY') {
       return (
           <SafeAreaView style={{flex:1, backgroundColor:'black'}}>
               <StatusBar barStyle="light-content" />
-              <View style={styles.nav}><TouchableOpacity onPress={()=>setView('HOME')}><X color="white"/></TouchableOpacity><Text style={{color:THEME.gold}}>SECURE PAY</Text><View/></View>
+              <View style={styles.nav}>
+                  <TouchableOpacity onPress={()=>setView('HOME')}>
+                    <Icon name="close" color="white" />
+                  </TouchableOpacity>
+                  <Text style={{color:THEME.gold}}>SECURE PAY</Text>
+                  <View style={{width:24}}/>
+              </View>
               <WebView source={{uri: AXIS_URL}} injectedJavaScript={getGhostScript(active, amt, active.email, active.phone)} onShouldStartLoadWithRequest={handleReq} javaScriptEnabled domStorageEnabled />
           </SafeAreaView>
       );
@@ -126,7 +168,9 @@ export default function App() {
         <SafeAreaView style={{flex:1}}>
             <View style={styles.header}>
                 <Text style={styles.title}>ELITE</Text>
-                <TouchableOpacity onPress={()=>setView('ADD')} style={styles.add}><Plus color="black"/></TouchableOpacity>
+                <TouchableOpacity onPress={()=>setView('ADD')} style={styles.add}>
+                    <Icon name="plus" color="black" />
+                </TouchableOpacity>
             </View>
             <View style={{height: CARD_HEIGHT+20}}>
                 <Animated.FlatList 
@@ -136,6 +180,12 @@ export default function App() {
                     ListEmptyComponent={<Text style={{color:'#444', textAlign:'center', marginTop:50}}>NO CARDS</Text>}
                 />
             </View>
+
+            <View style={{padding: 20, alignItems: 'center'}}>
+                <TouchableOpacity style={styles.geminiButton} onPress={getGeminiInsights}>
+                    <Text style={styles.geminiButtonText}>✨ GET INSIGHTS</Text>
+                </TouchableOpacity>
+            </View>
         </SafeAreaView>
         
         <Modal visible={view === 'ADD'} transparent animationType="slide">
@@ -144,6 +194,21 @@ export default function App() {
                 <View style={styles.form}>
                     <Text style={{color:'white', fontSize:20, fontWeight:'bold', marginBottom:20}}>ADD CARD</Text>
                     <AddCardForm onSave={save} onCancel={()=>setView('HOME')} />
+                </View>
+            </View>
+        </Modal>
+
+        <Modal visible={view === 'GEMINI'} transparent animationType="slide">
+            <View style={styles.modal}>
+                <BlurView intensity={40} style={StyleSheet.absoluteFill} />
+                <View style={styles.form}>
+                    <Text style={{color:THEME.gold, fontSize:22, fontWeight:'900', marginBottom:10}}>ADVISOR ✨</Text>
+                    <View style={{minHeight: 100, justifyContent: 'center'}}>
+                        {geminiLoading ? <ActivityIndicator color={THEME.gold} /> : <Text style={{color:'white', lineHeight: 20}}>{geminiResponse}</Text>}
+                    </View>
+                    <TouchableOpacity style={{alignItems:'center', marginTop:20, padding: 10, backgroundColor: '#333', borderRadius: 10}} onPress={()=>setView('HOME')}>
+                        <Text style={{color:'white', fontWeight: 'bold'}}>CLOSE</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
         </Modal>
@@ -179,5 +244,7 @@ const styles = StyleSheet.create({
     form: {backgroundColor:'#111', padding:30, borderTopLeftRadius:30, borderTopRightRadius:30},
     input: {backgroundColor:'#222', padding:15, borderRadius:10, color:'white', marginBottom:10},
     btn: {backgroundColor:THEME.gold, padding:15, borderRadius:10, alignItems:'center', marginTop:10},
-    nav: {padding:15, flexDirection:'row', justifyContent:'space-between', backgroundColor:'#111', alignItems:'center'}
+    nav: {padding:15, flexDirection:'row', justifyContent:'space-between', backgroundColor:'#111', alignItems:'center'},
+    geminiButton: { backgroundColor: '#1a1a1a', paddingVertical: 15, paddingHorizontal: 25, borderRadius: 25, borderWidth: 1, borderColor: THEME.gold },
+    geminiButtonText: { color: THEME.gold, fontWeight: 'bold', fontSize: 14, letterSpacing: 1 }
 });
