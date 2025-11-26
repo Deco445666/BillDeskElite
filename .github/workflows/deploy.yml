@@ -21,12 +21,11 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      # 3. Setup Node.js (FIXED: Removed cache setting to solve lock file error)
+      # 3. Setup Node.js (Cache removed to fix lockfile error)
       - name: 🏗 Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          # cache: 'npm' <--- REMOVED THIS LINE because you don't have package-lock.json
 
       # 4. Install your project libraries
       - name: 📦 Install Dependencies
@@ -37,8 +36,10 @@ jobs:
         run: npm install -g expo-cli
 
       # 6. Convert Expo code to Native Android code
+      # FIXED: Removed '--no-interactive' because it caused the crash.
+      # The server automatically runs in non-interactive mode.
       - name: ⚙️ Prebuild (Generate Android Folder)
-        run: npx expo prebuild --platform android --no-interactive
+        run: npx expo prebuild --platform android
 
       # 7. Build the APK using Gradle
       - name: 🔨 Build APK with Gradle
