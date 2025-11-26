@@ -35,22 +35,19 @@ jobs:
           packager: npm
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 🧹 Force Clean & Debug
+      - name: 🧹 Force Clean
         run: |
           npm cache clean --force
           rm -rf node_modules
-          # Delete potential conflict files
+          # Delete ANY potential conflict files
           rm -f babel.config.json
           rm -f app.config.js
           rm -f app.config.ts
-          # List files to verify cleanup in logs
-          ls -la
 
       - name: 📦 Install Dependencies
         run: npm install
 
       - name: 🚀 Build APK
-        # Added --clear-cache to eas build command as well
         run: eas build --platform android --profile preview --non-interactive --local --clear-cache
 
       - name: 📤 Upload APK
