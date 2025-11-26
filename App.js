@@ -7,7 +7,7 @@ import { WebView } from 'react-native-webview';
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CreditCard, Plus, X, ShieldCheck, Zap, History } from 'lucide-react-native';
-import Animated, { useSharedValue, useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
+import Animated, { useSharedVdasdxaDXdasdasdasalue, useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
 
