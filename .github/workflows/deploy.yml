@@ -1,4 +1,4 @@
-name: Build Diamond Production APK (Unbreakable)
+name: Build Final Production APK (Fixed R8)
 
 on:
   push:
@@ -32,38 +32,40 @@ jobs:
       - name: 📦 Install Expo CLI
         run: npm install -g expo-cli
 
-      # 3. Generate Valid Assets (NEW: ImageMagick Method)
-      # We install a Linux tool to create a perfect PNG file. 
-      # This fixes the "Crc error" permanently.
-      - name: 🖼️ Generate Valid Assets (ImageMagick)
+      # 3. Generate Valid Assets
+      - name: 🖼️ Generate Valid Assets
         run: |
           sudo apt-get update
           sudo apt-get install -y imagemagick
           mkdir -p assets
-          # Create a perfect 1024x1024 blue icon
           convert -size 1024x1024 xc:blue assets/icon.png
-          # Create a perfect splash screen
           convert -size 1242x2436 xc:blue assets/splash.png
-          
-          # Copy to other names
           cp assets/icon.png assets/adaptive-icon.png
           cp assets/icon.png assets/favicon.png
-          
-          echo "Assets generated successfully."
-          ls -l assets/
 
-      # 4. Prebuild (Generate Android Project)
+      # 4. Prebuild
       - name: ⚙️ Prebuild
         run: npx expo prebuild --platform android
 
-      # 5. Generate Keystore
+      # 5. FIX GRADLE PROPERTIES (Crucial Step)
+      # We create a clean gradle.properties file without the deprecated 'enableR8' flag.
+      # This solves the "Build Failed" error you just saw.
+      - name: 🔧 Fix Gradle Properties
+        working-directory: android
+        run: |
+          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m" > gradle.properties
+          echo "android.useAndroidX=true" >> gradle.properties
+          echo "android.enableJetifier=true" >> gradle.properties
+          # We purposefully DO NOT add android.enableR8 here.
+
+      # 6. Generate Keystore
       - name: 🔐 Generate Keystore
         run: |
           keytool -genkey -v -keystore release.keystore -alias androidreleasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
 
-      # 6. Build Release APK (SAFE MODE)
-      # R8 is DISABLED to prevent the "App keeps stopping" crash.
-      # Clean is ENABLED to prevent "Zombie Builds".
+      # 7. Build Release APK (Corrected Flags)
+      # We removed 'enableR8' from the command line flags too.
+      # Instead, we rely on 'minifyEnabled false' which is the modern way to disable shrinking.
       - name: 🔨 Build Release APK
         working-directory: android
         run: |
@@ -73,16 +75,13 @@ jobs:
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
             -Pandroid.injected.signing.store.password=android \
             -Pandroid.injected.signing.key.alias=androidreleasekey \
-            -Pandroid.injected.signing.key.password=android \
-            -Pandroid.enableR8=false \
-            -Pandroid.enableProguardInReleaseBuilds=false \
-            -Pandroid.shrinkResources=false
+            -Pandroid.injected.signing.key.password=android
 
-      # 7. Upload the Diamond APK
+      # 8. Upload Result
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BillDesk-Diamond-Build
+          name: BillDesk-Final-Fixed
           path: android/app/build/outputs/apk/release/app-release.apk
 
 
