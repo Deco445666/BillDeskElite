@@ -1,4 +1,4 @@
-name: Build Safe Production APK (No Crash)
+name: Build Diamond Production APK (Unbreakable)
 
 on:
   push:
@@ -32,16 +32,25 @@ jobs:
       - name: 📦 Install Expo CLI
         run: npm install -g expo-cli
 
-      # 3. Generate Valid Assets (NEW: 64x64 Pixel Valid Icon)
-      # This prevents "Bad Resource" crashes on startup.
-      - name: 🖼️ Generate Valid Assets
+      # 3. Generate Valid Assets (NEW: ImageMagick Method)
+      # We install a Linux tool to create a perfect PNG file. 
+      # This fixes the "Crc error" permanently.
+      - name: 🖼️ Generate Valid Assets (ImageMagick)
         run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
           mkdir -p assets
-          # This is a real 64x64 Red Square PNG. Android loves this.
-          echo "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABDSURBVGhD7c8BAQAwDMOg+TfdD1eCA46Cq6666qqrrbbqqaueurqqq6666mqrrbqqaueurqqq6666mqrrbqqaueurq66+N3O999577733AAAAAElFTkSuQmCC" | base64 -d > assets/icon.png
+          # Create a perfect 1024x1024 blue icon
+          convert -size 1024x1024 xc:blue assets/icon.png
+          # Create a perfect splash screen
+          convert -size 1242x2436 xc:blue assets/splash.png
+          
+          # Copy to other names
           cp assets/icon.png assets/adaptive-icon.png
-          cp assets/icon.png assets/splash.png
           cp assets/icon.png assets/favicon.png
+          
+          echo "Assets generated successfully."
+          ls -l assets/
 
       # 4. Prebuild (Generate Android Project)
       - name: ⚙️ Prebuild
@@ -53,8 +62,8 @@ jobs:
           keytool -genkey -v -keystore release.keystore -alias androidreleasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
 
       # 6. Build Release APK (SAFE MODE)
-      # I added flags to DISABLE R8 (Minification).
-      # This prevents the app from deleting necessary code, fixing the crash.
+      # R8 is DISABLED to prevent the "App keeps stopping" crash.
+      # Clean is ENABLED to prevent "Zombie Builds".
       - name: 🔨 Build Release APK
         working-directory: android
         run: |
@@ -69,11 +78,11 @@ jobs:
             -Pandroid.enableProguardInReleaseBuilds=false \
             -Pandroid.shrinkResources=false
 
-      # 7. Upload the Safe APK
+      # 7. Upload the Diamond APK
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BillDesk-Safe-Production
+          name: BillDesk-Diamond-Build
           path: android/app/build/outputs/apk/release/app-release.apk
 
 
