@@ -1,4 +1,4 @@
-name: Build Final Production APK (Clean)
+name: Build Safe Production APK (No Crash)
 
 on:
   push:
@@ -32,11 +32,13 @@ jobs:
       - name: 📦 Install Expo CLI
         run: npm install -g expo-cli
 
-      # 3. Generate Valid Assets
+      # 3. Generate Valid Assets (NEW: 64x64 Pixel Valid Icon)
+      # This prevents "Bad Resource" crashes on startup.
       - name: 🖼️ Generate Valid Assets
         run: |
           mkdir -p assets
-          echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" | base64 -d > assets/icon.png
+          # This is a real 64x64 Red Square PNG. Android loves this.
+          echo "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABDSURBVGhD7c8BAQAwDMOg+TfdD1eCA46Cq6666qqrrbbqqaueurqqq6666mqrrbqqaueurqqq6666mqrrbqqaueurq66+N3O999577733AAAAAElFTkSuQmCC" | base64 -d > assets/icon.png
           cp assets/icon.png assets/adaptive-icon.png
           cp assets/icon.png assets/splash.png
           cp assets/icon.png assets/favicon.png
@@ -50,8 +52,9 @@ jobs:
         run: |
           keytool -genkey -v -keystore release.keystore -alias androidreleasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
 
-      # 6. Build Release APK (WITH CLEANING)
-      # We added './gradlew clean' to wipe any old Debug files.
+      # 6. Build Release APK (SAFE MODE)
+      # I added flags to DISABLE R8 (Minification).
+      # This prevents the app from deleting necessary code, fixing the crash.
       - name: 🔨 Build Release APK
         working-directory: android
         run: |
@@ -61,11 +64,16 @@ jobs:
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
             -Pandroid.injected.signing.store.password=android \
             -Pandroid.injected.signing.key.alias=androidreleasekey \
-            -Pandroid.injected.signing.key.password=android
+            -Pandroid.injected.signing.key.password=android \
+            -Pandroid.enableR8=false \
+            -Pandroid.enableProguardInReleaseBuilds=false \
+            -Pandroid.shrinkResources=false
 
-      # 7. Upload with NEW NAME
+      # 7. Upload the Safe APK
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BillDesk-FINAL-PRODUCTION
+          name: BillDesk-Safe-Production
           path: android/app/build/outputs/apk/release/app-release.apk
+
+
