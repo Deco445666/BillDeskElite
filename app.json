@@ -1,37 +1,105 @@
-{
-  "expo": {
-    "name": "BillDesk Elite",
-    "slug": "billdesk-elite",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.elite.billdesk",
-      "permissions": [
-        "INTERNET"
-      ],
-      "compileSdkVersion": 34,
-      "targetSdkVersion": 34,
-      "buildToolsVersion": "34.0.0"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
-  }
-}
+name: Build Final Production APK (Memory Optimized)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Setup Environment
+      - name: 🏗 Setup Repo
+        uses: actions/checkout@v3
+
+      - name: 🏗 Setup Java 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: 🏗 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      # 2. Install Dependencies
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 📦 Install Expo CLI
+        run: npm install -g expo-cli
+
+      # 3. Generate Valid Assets
+      - name: 🖼️ Generate Valid Assets
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+          mkdir -p assets
+          convert -size 1024x1024 xc:blue assets/icon.png
+          convert -size 1242x2436 xc:blue assets/splash.png
+          cp assets/icon.png assets/adaptive-icon.png
+          cp assets/icon.png assets/favicon.png
+
+      # 4. Prebuild
+      - name: ⚙️ Prebuild
+        run: npx expo prebuild --platform android --clean
+
+      # 5. FORCE SDK 34 & OPTIMIZE MEMORY
+      - name: 🔧 Patch Build Files & Fix Memory
+        working-directory: android
+        run: |
+          # A. Force Upgrade to SDK 34 (Fixes Compatibility Error)
+          find . -name "build.gradle" -print0 | xargs -0 sed -i 's/compileSdkVersion = 33/compileSdkVersion = 34/g' || true
+          find . -name "build.gradle" -print0 | xargs -0 sed -i 's/targetSdkVersion = 33/targetSdkVersion = 34/g' || true
+          find . -name "build.gradle" -print0 | xargs -0 sed -i 's/compileSdkVersion 33/compileSdkVersion 34/g' || true
+          find . -name "build.gradle" -print0 | xargs -0 sed -i 's/targetSdkVersion 33/targetSdkVersion 34/g' || true
+          
+          # B. Inject OnePlus / Android 15 Optimizations into gradle.properties
+          # Remove bad R8 flag
+          if [ -f gradle.properties ]; then
+              sed -i '/android.enableR8/d' gradle.properties
+          fi
+          
+          echo "" >> gradle.properties
+          echo "# ONEPLUS & MEMORY OPTIMIZATIONS" >> gradle.properties
+          # 64-Bit Only
+          echo "reactNativeArchitectures=arm64-v8a" >> gradle.properties
+          # Disable Flipper
+          echo "FLIPPER_VERSION=" >> gradle.properties
+          echo "useFlipper=false" >> gradle.properties
+          # Enable Hermes
+          echo "hermesEnabled=true" >> gradle.properties
+          # Balance Java Memory (Limit to 3GB to save room for Node)
+          echo "org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m" >> gradle.properties
+
+      # 6. Generate Keystore
+      - name: 🔐 Generate Keystore
+        run: |
+          keytool -genkey -v -keystore release.keystore -alias androidreleasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
+
+      # 7. Build Release APK (With Node Memory Boost)
+      - name: 🔨 Build Release APK
+        working-directory: android
+        env:
+          # GIVE NODE.JS MORE RAM (Fixes the current crash)
+          NODE_OPTIONS: "--max_old_space_size=4096"
+        run: |
+          chmod +x gradlew
+          ./gradlew clean
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
+            -Pandroid.injected.signing.store.password=android \
+            -Pandroid.injected.signing.key.alias=androidreleasekey \
+            -Pandroid.injected.signing.key.password=android \
+            -Pandroid.enableProguardInReleaseBuilds=false \
+            -Pandroid.shrinkResources=false
+
+      # 8. Upload Result
+      - name: 📤 Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: BillDesk-Final-MemoryFixed
+          path: android/app/build/outputs/apk/release/app-release.apk
