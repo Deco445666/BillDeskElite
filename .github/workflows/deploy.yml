@@ -1,4 +1,4 @@
-name: Build Final Production APK (Memory Swap)
+name: Build Final Production APK (Nuclear Memory Fix)
 
 on:
   push:
@@ -47,7 +47,7 @@ jobs:
       - name: ⚙️ Prebuild
         run: npx expo prebuild --platform android --clean
 
-      # 5. FORCE SDK 34 & OPTIMIZE MEMORY
+      # 5. FORCE SDK 34 & NUCLEAR MEMORY CONFIG
       - name: 🔧 Patch Build Files & Fix Memory
         working-directory: android
         run: |
@@ -75,25 +75,26 @@ jobs:
           # 3. Enable Hermes (Modern Engine)
           echo "hermesEnabled=true" >> gradle.properties
           
-          # 4. LOW MEMORY MODE FOR JAVA (Reduced to 2GB to save RAM for Node)
-          echo "org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m" >> gradle.properties
+          # 4. NUCLEAR MEMORY MODE FOR JAVA (Reduced to 1.5GB)
+          echo "org.gradle.jvmargs=-Xmx1536m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError" >> gradle.properties
           
-          # 5. DISABLE PARALLEL BUILDING (Prevents Memory Spikes)
+          # 5. DISABLE ALL PARALLELISM & DAEMONS
           echo "org.gradle.daemon=false" >> gradle.properties
           echo "org.gradle.parallel=false" >> gradle.properties
           echo "org.gradle.configureondemand=false" >> gradle.properties
+          echo "org.gradle.workers.max=1" >> gradle.properties
 
       # 6. Generate Keystore
       - name: 🔐 Generate Keystore
         run: |
           keytool -genkey -v -keystore release.keystore -alias androidreleasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
 
-      # 7. Build Release APK (Max Node Memory)
+      # 7. Build Release APK (Max Node Memory + GC)
       - name: 🔨 Build Release APK
         working-directory: android
         env:
-          # MAXIMIZED NODE MEMORY (4.5GB - Given Java only takes 2GB now)
-          NODE_OPTIONS: "--max_old_space_size=4608"
+          # MAXIMIZED NODE MEMORY (4GB) with Aggressive GC
+          NODE_OPTIONS: "--max_old_space_size=4096"
         run: |
           chmod +x gradlew
           ./gradlew clean
@@ -103,11 +104,13 @@ jobs:
             -Pandroid.injected.signing.key.alias=androidreleasekey \
             -Pandroid.injected.signing.key.password=android \
             -Pandroid.enableProguardInReleaseBuilds=false \
-            -Pandroid.shrinkResources=false
+            -Pandroid.shrinkResources=false \
+            --no-daemon \
+            --max-workers=1
 
       # 8. Upload Result
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BillDesk-Final-MemorySwap
+          name: BillDesk-Nuclear-MemoryFixed
           path: android/app/build/outputs/apk/release/app-release.apk
