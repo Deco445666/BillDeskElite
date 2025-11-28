@@ -1,4 +1,4 @@
-name: Build Resurrection APK (Fixed Flipper)
+name: Build Compatibility Mode APK (No Hermes)
 
 on:
   push:
@@ -47,29 +47,28 @@ jobs:
       - name: ⚙️ Prebuild
         run: npx expo prebuild --platform android
 
-      # 5. RESURRECTION FIX
-      # We Remove ONLY the deprecated R8 flag.
-      # We ADD BACK FLIPPER_VERSION so the build script doesn't crash.
-      - name: 🔧 Fix Gradle Properties
+      # 5. COMPATIBILITY INJECTION
+      # We switch OFF Hermes and Switch ON JSC.
+      # We also Provide the missing FLIPPER_VERSION to prevent build errors.
+      - name: 🔧 Inject Compatibility Flags
         working-directory: android
         run: |
-          # 1. Remove ONLY the bad R8 flag
+          # Remove bad flags
           if [ -f gradle.properties ]; then
               sed -i '/android.enableR8/d' gradle.properties
           fi
           
-          # 2. FORCE INJECT FLIPPER_VERSION (Fixes your current crash)
+          # Inject Stability Variables
           echo "" >> gradle.properties
-          echo "# RESURRECTION FLAGS" >> gradle.properties
+          echo "# COMPATIBILITY FLAGS" >> gradle.properties
           echo "FLIPPER_VERSION=0.182.0" >> gradle.properties
           echo "reactNativeArchitectures=arm64-v8a,armeabi-v7a" >> gradle.properties
-          echo "newArchEnabled=false" >> gradle.properties
-          echo "hermesEnabled=true" >> gradle.properties
           
-          echo "--------------------------------"
-          echo "FINAL gradle.properties CONTENT:"
-          cat gradle.properties
-          echo "--------------------------------"
+          # DISABLING HERMES (The Critical Fix)
+          echo "hermesEnabled=false" >> gradle.properties
+          
+          # Keeping New Arch OFF
+          echo "newArchEnabled=false" >> gradle.properties
 
       # 6. Generate Keystore
       - name: 🔐 Generate Keystore
@@ -94,5 +93,5 @@ jobs:
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BillDesk-Resurrection-Build
+          name: BillDesk-Compatibility-Mode
           path: android/app/build/outputs/apk/release/app-release.apk
