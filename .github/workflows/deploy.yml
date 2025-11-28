@@ -1,4 +1,4 @@
-name: Build God-Mode Ultimate APK
+name: Build Resurrection APK (Fixed Flipper)
 
 on:
   push:
@@ -47,32 +47,36 @@ jobs:
       - name: ⚙️ Prebuild
         run: npx expo prebuild --platform android
 
-      # 5. GOD MODE INJECTION
-      # We force specific stable architectures and DISABLE Flipper.
-      - name: 🔧 Inject Stable Properties
+      # 5. RESURRECTION FIX
+      # We Remove ONLY the deprecated R8 flag.
+      # We ADD BACK FLIPPER_VERSION so the build script doesn't crash.
+      - name: 🔧 Fix Gradle Properties
         working-directory: android
         run: |
-          # Delete bad lines
+          # 1. Remove ONLY the bad R8 flag
           if [ -f gradle.properties ]; then
               sed -i '/android.enableR8/d' gradle.properties
-              sed -i '/FLIPPER_VERSION/d' gradle.properties
           fi
           
-          # Inject Stability Flags
+          # 2. FORCE INJECT FLIPPER_VERSION (Fixes your current crash)
           echo "" >> gradle.properties
-          echo "# GOD MODE FLAGS" >> gradle.properties
-          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m" >> gradle.properties
+          echo "# RESURRECTION FLAGS" >> gradle.properties
+          echo "FLIPPER_VERSION=0.182.0" >> gradle.properties
           echo "reactNativeArchitectures=arm64-v8a,armeabi-v7a" >> gradle.properties
           echo "newArchEnabled=false" >> gradle.properties
           echo "hermesEnabled=true" >> gradle.properties
-          # We purposefully remove FLIPPER_VERSION to disable it.
+          
+          echo "--------------------------------"
+          echo "FINAL gradle.properties CONTENT:"
+          cat gradle.properties
+          echo "--------------------------------"
 
       # 6. Generate Keystore
       - name: 🔐 Generate Keystore
         run: |
           keytool -genkey -v -keystore release.keystore -alias androidreleasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
 
-      # 7. Build Release APK (Ultimate Mode)
+      # 7. Build Release APK
       - name: 🔨 Build Release APK
         working-directory: android
         run: |
@@ -90,5 +94,5 @@ jobs:
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BillDesk-GodMode-Ultimate
+          name: BillDesk-Resurrection-Build
           path: android/app/build/outputs/apk/release/app-release.apk
