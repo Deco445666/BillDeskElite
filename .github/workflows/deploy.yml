@@ -1,4 +1,4 @@
-name: Build Final Production APK (Memory Optimized)
+name: Build Final Production APK (God Mode)
 
 on:
   push:
@@ -47,24 +47,25 @@ jobs:
       - name: ⚙️ Prebuild
         run: npx expo prebuild --platform android --clean
 
-      # 5. FORCE SDK 34 & OPTIMIZE MEMORY
-      - name: 🔧 Patch Build Files & Fix Memory
+      # 5. FORCE SDK 34 (REGEX MODE) & MEMORY FIX
+      # This step uses advanced pattern matching to find "33" and replace it with "34"
+      # regardless of how it is written (spaces, equals signs, etc).
+      - name: 🔧 Force SDK 34 & Configure Memory
         working-directory: android
         run: |
-          # A. Force Upgrade to SDK 34 (Fixes Compatibility Error)
-          find . -name "build.gradle" -print0 | xargs -0 sed -i 's/compileSdkVersion = 33/compileSdkVersion = 34/g' || true
-          find . -name "build.gradle" -print0 | xargs -0 sed -i 's/targetSdkVersion = 33/targetSdkVersion = 34/g' || true
-          find . -name "build.gradle" -print0 | xargs -0 sed -i 's/compileSdkVersion 33/compileSdkVersion 34/g' || true
-          find . -name "build.gradle" -print0 | xargs -0 sed -i 's/targetSdkVersion 33/targetSdkVersion 34/g' || true
-          
-          # B. Inject OnePlus / Android 15 Optimizations into gradle.properties
-          # Remove bad R8 flag
+          # A. Force SDK 34 using Regex (Catches all formatting variations)
+          echo "Patching build.gradle files..."
+          find . -name "build.gradle" -print0 | xargs -0 sed -i -E 's/compileSdkVersion\s*=?\s*[0-9]+/compileSdkVersion = 34/g'
+          find . -name "build.gradle" -print0 | xargs -0 sed -i -E 's/targetSdkVersion\s*=?\s*[0-9]+/targetSdkVersion = 34/g'
+          echo "SDK Version patched to 34."
+
+          # B. Inject OnePlus / Android 15 Optimizations
           if [ -f gradle.properties ]; then
               sed -i '/android.enableR8/d' gradle.properties
           fi
           
           echo "" >> gradle.properties
-          echo "# ONEPLUS & MEMORY OPTIMIZATIONS" >> gradle.properties
+          echo "# OPTIMIZATIONS" >> gradle.properties
           # 64-Bit Only
           echo "reactNativeArchitectures=arm64-v8a" >> gradle.properties
           # Disable Flipper
@@ -72,20 +73,20 @@ jobs:
           echo "useFlipper=false" >> gradle.properties
           # Enable Hermes
           echo "hermesEnabled=true" >> gradle.properties
-          # Balance Java Memory (Limit to 3GB to save room for Node)
-          echo "org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m" >> gradle.properties
+          # BALANCED MEMORY (2.5GB for Gradle, leaves room for Node + OS)
+          echo "org.gradle.jvmargs=-Xmx2560m -XX:MaxMetaspaceSize=512m" >> gradle.properties
 
       # 6. Generate Keystore
       - name: 🔐 Generate Keystore
         run: |
           keytool -genkey -v -keystore release.keystore -alias androidreleasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
 
-      # 7. Build Release APK (With Node Memory Boost)
+      # 7. Build Release APK (Safe Memory Limit)
       - name: 🔨 Build Release APK
         working-directory: android
         env:
-          # GIVE NODE.JS MORE RAM (Fixes the current crash)
-          NODE_OPTIONS: "--max_old_space_size=4096"
+          # BALANCED MEMORY (3.5GB for Node, leaves room for Gradle + OS)
+          NODE_OPTIONS: "--max_old_space_size=3584"
         run: |
           chmod +x gradlew
           ./gradlew clean
@@ -101,5 +102,5 @@ jobs:
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BillDesk-Final-MemoryFixed
+          name: BillDesk-GodMode-Final
           path: android/app/build/outputs/apk/release/app-release.apk
