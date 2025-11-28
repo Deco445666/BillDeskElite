@@ -1,4 +1,4 @@
-name: Build Infinity Production APK (Final Fix)
+name: Build God-Mode Ultimate APK
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
       - name: 📦 Install Expo CLI
         run: npm install -g expo-cli
 
-      # 3. Generate Valid Assets (ImageMagick)
+      # 3. Generate Valid Assets
       - name: 🖼️ Generate Valid Assets
         run: |
           sudo apt-get update
@@ -47,36 +47,32 @@ jobs:
       - name: ⚙️ Prebuild
         run: npx expo prebuild --platform android
 
-      # 5. GOD-MODE INJECTION (Fixes Flipper Error)
-      - name: 🔧 Fix & Inject Gradle Properties
+      # 5. GOD MODE INJECTION
+      # We force specific stable architectures and DISABLE Flipper.
+      - name: 🔧 Inject Stable Properties
         working-directory: android
         run: |
-          # 1. DELETE the banned R8 flag if it exists in the file
+          # Delete bad lines
           if [ -f gradle.properties ]; then
               sed -i '/android.enableR8/d' gradle.properties
+              sed -i '/FLIPPER_VERSION/d' gradle.properties
           fi
           
-          # 2. INJECT missing variables (Fixes Flipper Crash)
+          # Inject Stability Flags
           echo "" >> gradle.properties
-          echo "# FORCE INJECTED PROPERTIES" >> gradle.properties
-          echo "FLIPPER_VERSION=0.182.0" >> gradle.properties
-          echo "reactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64" >> gradle.properties
+          echo "# GOD MODE FLAGS" >> gradle.properties
+          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m" >> gradle.properties
+          echo "reactNativeArchitectures=arm64-v8a,armeabi-v7a" >> gradle.properties
           echo "newArchEnabled=false" >> gradle.properties
           echo "hermesEnabled=true" >> gradle.properties
-          
-          echo "--------------------------------"
-          echo "FINAL gradle.properties CONTENT:"
-          cat gradle.properties
-          echo "--------------------------------"
+          # We purposefully remove FLIPPER_VERSION to disable it.
 
       # 6. Generate Keystore
       - name: 🔐 Generate Keystore
         run: |
           keytool -genkey -v -keystore release.keystore -alias androidreleasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
 
-      # 7. Build Release APK (The Fix)
-      # I have REMOVED '-Pandroid.enableR8=false' (The Banned Flag).
-      # I kept '-Pandroid.enableProguardInReleaseBuilds=false' (The Safe Way to stop crashes).
+      # 7. Build Release APK (Ultimate Mode)
       - name: 🔨 Build Release APK
         working-directory: android
         run: |
@@ -94,5 +90,5 @@ jobs:
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BillDesk-Infinity-Build
+          name: BillDesk-GodMode-Ultimate
           path: android/app/build/outputs/apk/release/app-release.apk
