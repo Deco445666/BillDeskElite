@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "billdesk-elite",
+    "name": "BillDesk Elite",
     "slug": "billdesk-elite",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -22,15 +22,13 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.elite.billdesk"
+      "package": "com.elite.billdesk",
+      "permissions": [
+        "INTERNET"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "61679cab-7aaa-4a5b-a545-f96d269f0cba"
-      }
     }
   }
 }
