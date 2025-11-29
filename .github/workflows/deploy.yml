@@ -1,4 +1,4 @@
-name: Build Final Production APK (Java 17 Fix)
+name: Build Final Production APK (Kotlin Fix)
 
 on:
   push:
@@ -47,17 +47,20 @@ jobs:
       - name: ⚙️ Prebuild
         run: npx expo prebuild --platform android --clean
 
-      # 5. FORCE SDK 34 & JAVA 17 COMPATIBILITY
-      # We inject a script to force ALL modules to use Java 17.
-      - name: 🔧 Force Java 17 & SDK 34
+      # 5. FORCE SDK 34, JAVA 17, & KOTLIN VERSION
+      - name: 🔧 Fix Everything (SDK, Java, Kotlin)
         working-directory: android
         run: |
           # A. Force SDK 34 (Regex Method)
           find . -name "build.gradle" -print0 | xargs -0 sed -i -E 's/compileSdkVersion\s*=?\s*[0-9]+/compileSdkVersion = 34/g' || true
           find . -name "build.gradle" -print0 | xargs -0 sed -i -E 's/targetSdkVersion\s*=?\s*[0-9]+/targetSdkVersion = 34/g' || true
           
-          # B. FORCE JAVA 17 (The Fix for your new error)
+          # B. FORCE JAVA 17 & KOTLIN 1.8.20 (The Fix)
           cat <<EOF >> build.gradle
+          
+          buildscript {
+              ext.kotlin_version = '1.8.20'
+          }
           
           allprojects {
               tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
@@ -69,12 +72,20 @@ jobs:
                   sourceCompatibility = JavaVersion.VERSION_17
                   targetCompatibility = JavaVersion.VERSION_17
               }
+              
+              // Force Kotlin Version for all submodules
+              configurations.all {
+                  resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                      if (details.requested.group == 'org.jetbrains.kotlin' && details.requested.name.startsWith('kotlin-stdlib')) {
+                          details.useVersion '1.8.20'
+                      }
+                  }
+              }
           }
           EOF
 
           # C. Inject Resolution Strategy (Fixes Dependency Mutiny)
           cat <<EOF >> build.gradle
-          
           allprojects {
               configurations.all {
                   resolutionStrategy {
@@ -126,5 +137,5 @@ jobs:
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BillDesk-Final-Java17Fixed
+          name: BillDesk-Final-KotlinFixed
           path: android/app/build/outputs/apk/release/app-release.apk
