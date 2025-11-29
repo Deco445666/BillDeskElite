@@ -22,16 +22,17 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.elite.billdesk",
-      "permissions": [
-        "INTERNET"
-      ],
-      "compileSdkVersion": 34,
-      "targetSdkVersion": 34,
-      "buildToolsVersion": "34.0.0"
+      "package": "com.elite.billdesk"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "490d316f-3006-4596-9422-716ad6d02d30"
+      }
     }
   }
 }
+
+
