@@ -1,4 +1,4 @@
-name: Trigger Expo Cloud Build
+name: Trigger Expo Cloud Build (Auto-Credentials)
 
 on:
   push:
@@ -19,6 +19,23 @@ jobs:
 
       - name: 📦 Install EAS CLI
         run: npm install -g eas-cli
+
+      - name: 🔐 Generate & Upload Credentials
+        env:
+          EXPO_TOKEN: MbuueX4TP3U7uHzmBVjwWmE7nBy4UE0m9qy_n56A
+        run: |
+          # 1. Generate a fresh Keystore file locally
+          echo "Generating Keystore..."
+          keytool -genkey -v -keystore release.keystore -alias androidreleasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=BillDesk,O=BillDesk,C=US"
+          
+          # 2. Push it to Expo Cloud (This stops the "Interactive" error)
+          echo "Uploading Keystore to Expo..."
+          eas credentials:push android \
+            --keystore-path release.keystore \
+            --keystore-password android \
+            --key-alias androidreleasekey \
+            --key-password android \
+            --non-interactive
 
       - name: 🚀 Trigger Build
         env:
