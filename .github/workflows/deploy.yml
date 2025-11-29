@@ -1,4 +1,4 @@
-name: Trigger Expo Cloud Build
+name: Trigger Expo Cloud Build (Direct Auth)
 
 on:
   push:
@@ -22,7 +22,8 @@ jobs:
 
       - name: 🚀 Trigger Build on Expo Servers
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          # I put the token directly here. It CANNOT miss it now.
+          EXPO_TOKEN: MbuueX4TP3U7uHzmBVjwWmE7nBy4UE0m9qy_n56A
         run: eas build --platform android --profile preview --non-interactive --no-wait
 
 
