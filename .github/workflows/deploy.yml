@@ -1,4 +1,4 @@
-name: Trigger Expo Cloud Build (Auto-Create)
+name: Trigger Expo Cloud Build
 
 on:
   push:
@@ -20,14 +20,9 @@ jobs:
       - name: 📦 Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: 🚀 Auto-Init & Build
+      - name: 🚀 Trigger Build
         env:
           EXPO_TOKEN: MbuueX4TP3U7uHzmBVjwWmE7nBy4UE0m9qy_n56A
-        run: |
-          # Initialize a NEW project automatically
-          npx eas-cli init --non-interactive
-          
-          # Build it
-          eas build --platform android --profile preview --non-interactive --no-wait
+        run: eas build --platform android --profile preview --non-interactive --no-wait
 
 
