@@ -1,4 +1,4 @@
-name: Build Final Production APK (Separated Steps)
+name: Build Final Production APK (Single Threaded)
 
 on:
   push:
@@ -43,23 +43,20 @@ jobs:
           cp assets/icon.png assets/adaptive-icon.png
           cp assets/icon.png assets/favicon.png
 
-      # 4. Prebuild (Fresh Android Folder)
+      # 4. Prebuild
       - name: ⚙️ Prebuild
         run: npx expo prebuild --platform android --clean
 
-      # ---------------------------------------------------------
-      # STEP 5: FIX SETTINGS FILE (gradle.properties)
-      # This handles Memory, Flipper, and Architecture (OnePlus)
-      # ---------------------------------------------------------
+      # 5. CONFIGURE GRADLE (Single Threaded Mode)
       - name: 🔧 Fix Gradle Properties
         working-directory: android
         run: |
-          # Remove bad flags
+          # A. Clear bad flags
           if [ -f gradle.properties ]; then
               sed -i '/android.enableR8/d' gradle.properties
           fi
           
-          # Append Safe Settings
+          # B. Inject Safe Settings
           echo "" >> gradle.properties
           echo "# MEMORY & ARCHITECTURE" >> gradle.properties
           echo "reactNativeArchitectures=arm64-v8a" >> gradle.properties
@@ -67,17 +64,18 @@ jobs:
           echo "useFlipper=false" >> gradle.properties
           echo "hermesEnabled=true" >> gradle.properties
           
-          # CRITICAL MEMORY CAP (1.5GB)
+          # C. NUCLEAR MEMORY SETTINGS (Single Threaded)
+          # We limit Java to 1.5GB
+          # We DISABLE the Daemon (The cause of your crash)
+          # We set Workers to 1 (No parallelism)
           echo "org.gradle.jvmargs=-Xmx1536m -XX:MaxMetaspaceSize=512m" >> gradle.properties
           echo "org.gradle.daemon=false" >> gradle.properties
           echo "org.gradle.parallel=false" >> gradle.properties
-          echo "org.gradle.caching=false" >> gradle.properties
+          echo "org.gradle.configureondemand=false" >> gradle.properties
+          echo "org.gradle.workers.max=1" >> gradle.properties
           echo "kotlin.compiler.execution.strategy=in-process" >> gradle.properties
 
-      # ---------------------------------------------------------
-      # STEP 6: FIX BUILD CODE (build.gradle)
-      # This handles SDK Versions and Library Conflicts
-      # ---------------------------------------------------------
+      # 6. FIX BUILD CODE (Force Compatibility)
       - name: 🔧 Fix Build Gradle
         working-directory: android
         run: |
@@ -85,7 +83,7 @@ jobs:
           find . -name "build.gradle" -print0 | xargs -0 sed -i -E 's/compileSdkVersion\s*=?\s*[0-9]+/compileSdkVersion = 34/g' || true
           find . -name "build.gradle" -print0 | xargs -0 sed -i -E 's/targetSdkVersion\s*=?\s*[0-9]+/targetSdkVersion = 34/g' || true
           
-          # B. Inject Dependency Locks (Force older compatible libraries)
+          # B. Inject Dependency Locks
           cat <<EOF >> build.gradle
           allprojects {
               configurations.all {
@@ -105,12 +103,14 @@ jobs:
         run: |
           keytool -genkey -v -keystore release.keystore -alias androidreleasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
 
-      # 8. Build Release APK (With Node Memory Boost)
+      # 8. Build Release APK (Strict Single Thread)
       - name: 🔨 Build Release APK
         working-directory: android
         env:
-          # Node gets 3.5GB RAM
+          # Node gets 3.5GB
           NODE_OPTIONS: "--max_old_space_size=3584"
+          # Gradle Options forced to no-daemon
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=1"
         run: |
           chmod +x gradlew
           ./gradlew clean
@@ -122,11 +122,11 @@ jobs:
             -Pandroid.enableProguardInReleaseBuilds=false \
             -Pandroid.shrinkResources=false \
             --no-daemon \
-            --max-workers=1
+            --max-workers=1 --no-parallel --offline
 
       # 9. Upload Result
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BillDesk-Final-Separated
+          name: BillDesk-Final-SingleThread
           path: android/app/build/outputs/apk/release/app-release.apk
