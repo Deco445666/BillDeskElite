@@ -1,4 +1,4 @@
-name: Trigger Expo Cloud Build (Auto-Credentials)
+name: Trigger Expo Cloud Build (Force Credentials)
 
 on:
   push:
@@ -20,25 +20,34 @@ jobs:
       - name: 📦 Install EAS CLI
         run: npm install -g eas-cli
 
-      # THIS IS THE MISSING STEP IN YOUR LOGS
+      # --- FORCE CREDENTIALS STEP ---
       - name: 🔐 Generate & Upload Keystore
         env:
           EXPO_TOKEN: MbuueX4TP3U7uHzmBVjwWmE7nBy4UE0m9qy_n56A
         run: |
-          # 1. Create a Keystore File
+          # 1. Generate Keystore
           echo "Generating Android Keystore..."
           keytool -genkey -v -keystore release.keystore -alias androidreleasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=BillDesk,O=BillDesk,C=US"
           
-          # 2. Upload it to Expo (Prevents 'Interactive Mode' Error)
+          # 2. Verify File Exists
+          if [ -f "release.keystore" ]; then
+            echo "Keystore generated successfully."
+          else
+            echo "Error: Keystore file missing!"
+            exit 1
+          fi
+
+          # 3. Upload to Expo (FORCE MODE)
+          # We removed the '||' safety. If this fails, we want the log to tell us why.
           echo "Uploading credentials to Expo..."
-          # We force the upload. If it fails, we assume credentials exist and continue.
           eas credentials:push android \
             --keystore-path release.keystore \
             --keystore-password android \
             --key-alias androidreleasekey \
             --key-password android \
-            --non-interactive || echo "Credentials might already exist, proceeding..."
+            --non-interactive
 
+      # --- BUILD STEP ---
       - name: 🚀 Trigger Build
         env:
           EXPO_TOKEN: MbuueX4TP3U7uHzmBVjwWmE7nBy4UE0m9qy_n56A
