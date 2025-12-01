@@ -1,4 +1,4 @@
-name: Trigger Expo Cloud Build (Force Credentials)
+name: Build App
 
 on:
   push:
@@ -20,37 +20,8 @@ jobs:
       - name: 📦 Install EAS CLI
         run: npm install -g eas-cli
 
-      # --- FORCE CREDENTIALS STEP ---
-      - name: 🔐 Generate & Upload Keystore
+      - name: 🚀 Build APK
         env:
           EXPO_TOKEN: MbuueX4TP3U7uHzmBVjwWmE7nBy4UE0m9qy_n56A
-        run: |
-          # 1. Generate Keystore
-          echo "Generating Android Keystore..."
-          keytool -genkey -v -keystore release.keystore -alias androidreleasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=BillDesk,O=BillDesk,C=US"
-          
-          # 2. Verify File Exists
-          if [ -f "release.keystore" ]; then
-            echo "Keystore generated successfully."
-          else
-            echo "Error: Keystore file missing!"
-            exit 1
-          fi
-
-          # 3. Upload to Expo (FORCE MODE)
-          # We removed the '||' safety. If this fails, we want the log to tell us why.
-          echo "Uploading credentials to Expo..."
-          eas credentials:push android \
-            --keystore-path release.keystore \
-            --keystore-password android \
-            --key-alias androidreleasekey \
-            --key-password android \
-            --non-interactive
-
-      # --- BUILD STEP ---
-      - name: 🚀 Trigger Build
-        env:
-          EXPO_TOKEN: MbuueX4TP3U7uHzmBVjwWmE7nBy4UE0m9qy_n56A
+        # We use --no-wait so GitHub finishes quickly. You check progress on expo.dev
         run: eas build --platform android --profile preview --non-interactive --no-wait
-
-
