@@ -22,11 +22,27 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.elite.billdesk"
+      "package": "com.elite.billdesk",
+      "permissions": [
+        "INTERNET"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "flipper": false,
+            "hermesEnabled": true,
+            "kotlinVersion": "1.8.10"
+          }
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "9f2bc95a-9dfd-443f-add6-2af1f0117676"
@@ -34,6 +50,3 @@
     }
   }
 }
-
-
-
