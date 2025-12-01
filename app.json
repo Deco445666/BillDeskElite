@@ -22,10 +22,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.elite.billdesk",
-      "permissions": [
-        "INTERNET"
-      ]
+      "package": "com.elite.billdesk"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,10 +32,12 @@
         "expo-build-properties",
         {
           "android": {
-            "usesCleartextTraffic": true,
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "buildToolsVersion": "34.0.0",
             "flipper": false,
             "hermesEnabled": true,
-            "kotlinVersion": "1.8.10"
+            "usesCleartextTraffic": true
           }
         }
       ]
